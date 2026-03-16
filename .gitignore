@@ -4,3 +4,6 @@ __pycache__
 *.db
 .env
 *.zip
+.DS_Store
+*.pid
+product-chatbot/optimization_tools/backups/

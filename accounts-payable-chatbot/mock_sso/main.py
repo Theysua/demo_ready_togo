@@ -10,9 +10,17 @@ from datetime import datetime, timedelta
 from jose import jwt, JWTError
 from dotenv import load_dotenv
 
-# Load Dify URL and API key from parent's parent directory .env if not set
-load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
-DIFY_API_KEY = os.getenv("CHATFLOW_ACCOUNT_PAYABLE_API")
+# Load project-local .env first, then fall back to the workspace root .env
+PROJECT_ROOT = os.path.dirname(os.path.dirname(__file__))
+WORKSPACE_ROOT = os.path.dirname(PROJECT_ROOT)
+load_dotenv(os.path.join(PROJECT_ROOT, ".env"))
+load_dotenv(os.path.join(WORKSPACE_ROOT, ".env"))
+
+DIFY_BASE_URL = os.getenv("DIFY_BASE_URL") or os.getenv("API_ENDPOINT", "http://localhost/v1")
+DIFY_BASE_URL = DIFY_BASE_URL.rstrip("/")
+DIFY_CHAT_MESSAGES_URL = f"{DIFY_BASE_URL}/chat-messages"
+DIFY_API_KEY = os.getenv("CHATFLOW_ACCOUNT_PAYABLE_API", "").strip()
+
 if not DIFY_API_KEY:
     print("Warning: CHATFLOW_ACCOUNT_PAYABLE_API not found in .env")
 
@@ -85,6 +93,12 @@ async def get_current_user(request: Request):
 
 @app.post("/api/chat")
 async def chat(message: ChatMessage, current_user: dict = Depends(get_current_user)):
+    if not DIFY_API_KEY:
+        raise HTTPException(
+            status_code=503,
+            detail="CHATFLOW_ACCOUNT_PAYABLE_API is not configured. Add it to /root/demo_ready_togo/.env.",
+        )
+
     user_email = current_user.get("sub")
     user_role = current_user.get("role")
     
@@ -112,7 +126,7 @@ async def chat(message: ChatMessage, current_user: dict = Depends(get_current_us
         async with httpx.AsyncClient(timeout=60.0) as client:
             async with client.stream(
                 "POST",
-                "http://localhost/v1/chat-messages",
+                DIFY_CHAT_MESSAGES_URL,
                 json=dify_payload,
                 headers=headers
             ) as resp:

@@ -389,7 +389,11 @@ workflow:
             - "Tell me a joke."
 
             '
-        instructions: ''
+        instructions: 'Class 1 is only for read-only invoice status or amount lookups.
+          If the vendor asks to approve, reject, expedite, escalate, override, or
+          perform any internal action, you must choose Class 2 even when an invoice
+          number is present. When in doubt between Class 1 and Class 2 for an action
+          request, choose Class 2.'
         model:
           completion_params:
             temperature: 0.7
@@ -834,26 +838,31 @@ workflow:
             value: 'You are the Goodyear Accounts Payable Chatbot specifically serving
               external vendors.
 
-              The current vendor is inquiring about their invoice status or payment
-              details. You have access to the [List Invoices] or [Get Invoice] tool
-              to retrieve this information.
+              The current vendor is only allowed to inquire about their invoice status
+              or payment details. You have access to the [List Invoices] or [Get Invoice]
+              tool to retrieve this information.
 
 
               【Strict Guidelines】:
 
-              1. You can ONLY use the provided tool to fetch data belonging to this
-              specific vendor. The system will automatically filter data based on
-              their authenticated email and mapped vendor_id.
+              1. You can ONLY use the provided tool to fetch read-only data belonging
+              to this specific vendor. The system will automatically filter data based
+              on their authenticated email and mapped vendor_id.
 
-              2. If the tool returns empty or states "not found", do NOT hallucinate
+              2. If the vendor asks to approve, reject, expedite, escalate, override,
+              or perform any internal Goodyear action, do NOT call any tool for that
+              request. Politely refuse and explain that external vendors cannot approve
+              invoices or trigger internal approval actions.
+
+              3. If the tool returns empty or states "not found", do NOT hallucinate
               or guess the payment status. Politely inform the vendor that the invoice
               is not currently found in the system, and it might still be in the initial
               processing stage.
 
-              3. NEVER disclose any internal Goodyear financial policies, approval
+              4. NEVER disclose any internal Goodyear financial policies, approval
               workflows, or data belonging to other companies.
 
-              4. Maintain a highly professional, polite, and strictly business-oriented
+              5. Maintain a highly professional, polite, and strictly business-oriented
               tone. Present the JSON data returned from the tool in a clear, human-readable
               format.'
           tools:
@@ -925,8 +934,9 @@ workflow:
       type: custom
       width: 242
     - data:
-        answer: Hi, this is your vendor support agent. I can track your invoice status
-          for you. Please provide invoice number to get started!
+        answer: External vendors are not allowed to approve, reject, or expedite
+          invoices. I can only help check the status of your own invoices. Please
+          send your invoice number if you want me to look up its current status.
         selected: false
         title: DIRECT ANSWER
         type: answer

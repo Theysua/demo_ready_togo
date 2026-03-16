@@ -61,9 +61,11 @@ You must set up the application inside Dify before using the chat UI.
 Open your browser and visit:
 👉 **http://localhost:8002**
 
-You will see the mock SSO login page. Try the dual pathways:
-- **Login as Internal (e.g. admin@demo.com):** You have full access. Ask the bot to *"approve INV-2001"* or *"check status of INV-1002"*.
-- **Login as Vendor (e.g. john@vendor1.com):** You represent an external vendor. The architecture physically strips your rights to approve an invoice or query other vendors' data. Ask the bot to *"approve INV-1001"* and watch it politely decline the request due to RBAC policies.
+You will see the mock SSO login page. Demo credentials are documented locally in `ENVIRONMENT_CREDENTIALS.md`.
+
+Try the dual pathways:
+- **Login as Internal:** You have full access. Ask the bot to *"approve INV-2001"* or *"check status of INV-1002"*.
+- **Login as Vendor:** You represent an external vendor. The architecture physically strips your rights to approve an invoice or query other vendors' data. Ask the bot to *"approve INV-1001"* and watch it politely decline the request due to RBAC policies.
 
 Use the `test_cases_en.md` document for exhaustive test prompts!
 

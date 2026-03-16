@@ -18,6 +18,7 @@ uvicorn app:app --host 0.0.0.0 --port 8000
 
 - `GET http://localhost:8000/health`
 - `POST http://localhost:8000/api/vendor/quotes`
+- `POST http://localhost:8000/api/vendor-quotations-bulk`
 - `GET http://localhost:8000/api/po-template`
 
 ---
@@ -138,6 +139,34 @@ uvicorn app:app --host 0.0.0.0 --port 8000
   }
 ]
 ```
+
+### 云端兼容模式
+
+如果上游 `GET ITEMS` 节点只输出两个变量：
+
+- `item_json_string`
+- `total_budget_mentioned`
+
+本地服务也支持直接接收这种格式，使用下面这个兼容接口：
+
+- Method: `POST`
+- URL: `http://host.docker.internal:8000/api/vendor-quotations-bulk`
+
+请求体示例：
+
+```json
+{
+  "item_json_string": "[{\"name\":\"Razer BlackWidow V4 Keyboard\",\"quantity\":2,\"unit\":\"pcs\",\"target_unit_price\":1299},{\"name\":\"Razer DeathAdder V3 Mouse\",\"quantity\":2,\"unit\":\"pcs\",\"target_unit_price\":499}]",
+  "total_budget_mentioned": 4500
+}
+```
+
+兼容接口会自动：
+
+- 解析 `item_json_string`
+- 兼容外层多余引号
+- 生成标准报价结果
+- 回传 `total_budget_mentioned` 和 `budget_gap`
 
 ---
 
