@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Goodyear AP Chatbot Dashboard</title>
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        .chat-bubble-user {
+            background-color: #0060A9; /* Goodyear Blue */
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        .chat-bubble-bot {
+            background-color: #f3f4f6;
+            color: #1f2937;
+            border-bottom-left-radius: 4px;
+        }
+        .typing-indicator span {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            background-color: #9ca3af;
+            border-radius: 50%;
+            margin: 0 2px;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen flex flex-col">
+
+    <!-- Header / Navbar -->
+    <header class="bg-white shadow-sm px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center space-x-4">
+            <div class="font-bold text-xl text-gray-800 tracking-wider">AP Chatbot</div>
+            <div class="h-6 w-px bg-gray-300"></div>
+            <h1 class="text-gray-500 text-sm italic">Custom built for demonstration purposes</h1>
+        </div>
+        <div class="flex items-center space-x-4">
+            <div class="text-sm text-gray-600 text-right">
+                <div id="user-email" class="font-medium"></div>
+                <div id="user-role-badge" class="inline-block px-2 py-0.5 rounded text-xs font-semibold uppercase mt-0.5 bg-gray-200"></div>
+            </div>
+            <button onclick="startNewChat()" class="text-sm text-[#0060A9] hover:text-blue-800 font-medium whitespace-nowrap px-3 py-1.5 border border-[#0060A9] rounded hover:bg-blue-50 transition-colors">New Chat</button>
+            <button onclick="logout()" class="text-sm text-red-600 hover:text-red-800 font-medium whitespace-nowrap ml-2">Sign Out</button>
+        </div>
+    </header>
+
+    <!-- Main Content (Chat Area) -->
+    <main class="flex-1 overflow-hidden flex justify-center p-6">
+        <div class="bg-white rounded-lg shadow-md w-full max-w-4xl flex flex-col overflow-hidden">
+            
+            <!-- Chat Header -->
+            <div class="bg-gray-50 border-b border-gray-200 px-6 py-4">
+                <h2 class="font-semibold text-gray-800">AP Assistant</h2>
+                <p class="text-xs text-gray-500">Ask me about invoices, approvals, or AP workflow</p>
+            </div>
+
+            <!-- Messages Container -->
+            <div id="chat-messages" class="flex-1 overflow-y-auto p-6 space-y-6">
+                <!-- Initial Greeting -->
+                <div class="flex">
+                    <div class="w-8 h-8 rounded-full bg-[#FFDF00] flex items-center justify-center flex-shrink-0 mr-3">
+                        <span class="text-[#0060A9] font-bold text-xs">AI</span>
+                    </div>
+                    <div class="chat-bubble-bot rounded-2xl px-4 py-3 shadow-sm max-w-[80%] text-sm prose prose-sm max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+                        <p>Hello! I am the Accounts Payable Chatbot. How can I help you today?</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="border-t border-gray-200 px-6 py-4 bg-gray-50">
+                <form id="chat-form" onsubmit="sendMessage(event)" class="relative">
+                    <input type="text" id="chat-input" class="w-full bg-white border border-gray-300 rounded-full pl-6 pr-14 py-3 focus:outline-none focus:ring-2 focus:ring-[#0060A9] focus:border-transparent" placeholder="Type your message here...">
+                    <button type="submit" id="send-btn" class="absolute right-2 top-1.5 bottom-1.5 bg-[#0060A9] hover:bg-blue-700 text-white rounded-full w-10 h-10 flex items-center justify-center transition-colors">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                    </button>
+                </form>
+            </div>
+            
+        </div>
+    </main>
+
+    <script>
+        // --- 1. Authenticaton Check ---
+        const token = localStorage.getItem('auth_token');
+        const userInfoStr = localStorage.getItem('user_info');
+        
+        if (!token || !userInfoStr) {
+            window.location.href = '/'; // redirect to login
+        }
+        
+        const userInfo = JSON.parse(userInfoStr);
+        document.getElementById('user-email').innerText = userInfo.email;
+        
+        const roleBadge = document.getElementById('user-role-badge');
+        if (userInfo.role === 'internal') {
+            roleBadge.innerText = "Internal AP";
+            roleBadge.className = "inline-block px-2 py-0.5 rounded text-xs font-semibold uppercase mt-0.5 bg-blue-100 text-blue-800";
+        } else {
+            roleBadge.innerText = `Vendor (${userInfo.vendor_id})`;
+            roleBadge.className = "inline-block px-2 py-0.5 rounded text-xs font-semibold uppercase mt-0.5 bg-purple-100 text-purple-800";
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = '/';
+        }
+
+        function startNewChat() {
+            conversationId = null;
+            chatMessages.innerHTML = `
+                <div class="flex">
+                    <div class="w-8 h-8 rounded-full bg-[#FFDF00] flex items-center justify-center flex-shrink-0 mr-3">
+                        <span class="text-[#0060A9] font-bold text-xs">AI</span>
+                    </div>
+                    <div class="chat-bubble-bot rounded-2xl px-4 py-3 shadow-sm max-w-[80%] text-sm prose prose-sm max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+                        <p>Hello! I am the Accounts Payable Chatbot. How can I help you today?</p>
+                    </div>
+                </div>
+            `;
+            chatInput.value = '';
+            chatInput.focus();
+        }
+
+        // --- 2. Chat Logic ---
+        let conversationId = null; // Store conversation ID if Dify returns it
+        const chatMessages = document.getElementById('chat-messages');
+        const chatInput = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('send-btn');
+        const chatForm = document.getElementById('chat-form');
+
+        function appendUserMessage(text) {
+            const html = `
+                <div class="flex justify-end">
+                    <div class="chat-bubble-user rounded-2xl px-4 py-3 shadow-sm max-w-[80%] text-sm whitespace-pre-wrap">${escapeHTML(text)}</div>
+                </div>
+            `;
+            chatMessages.insertAdjacentHTML('beforeend', html);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function appendBotMessage(text) {
+            const html = `
+                <div class="flex">
+                    <div class="w-8 h-8 rounded-full bg-[#FFDF00] flex items-center justify-center flex-shrink-0 mr-3">
+                        <span class="text-[#0060A9] font-bold text-xs">AI</span>
+                    </div>
+                    <div class="chat-bubble-bot rounded-2xl px-4 py-3 shadow-sm max-w-[80%] text-sm prose prose-sm max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">${marked.parse(text)}</div>
+                </div>
+            `;
+            chatMessages.insertAdjacentHTML('beforeend', html);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function showTypingIndicator() {
+            const id = 'typing-' + Date.now();
+            const html = `
+                <div id="${id}" class="flex">
+                    <div class="w-8 h-8 rounded-full bg-[#FFDF00] flex items-center justify-center flex-shrink-0 mr-3">
+                        <span class="text-[#0060A9] font-bold text-xs">AI</span>
+                    </div>
+                    <div class="chat-bubble-bot rounded-2xl px-4 py-3 shadow-sm flex items-center">
+                        <div class="typing-indicator flex items-center h-5">
+                            <span></span><span></span><span></span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            chatMessages.insertAdjacentHTML('beforeend', html);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            return id;
+        }
+
+        function removeTypingIndicator(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }
+
+        async function sendMessage(e) {
+            e.preventDefault();
+            const text = chatInput.value.trim();
+            if(!text) return;
+            
+            // UI Update
+            appendUserMessage(text);
+            chatInput.value = '';
+            chatInput.disabled = true;
+            sendBtn.disabled = true;
+            const typingId = showTypingIndicator();
+
+            // API Call
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        query: text,
+                        user: userInfo.email,
+                        conversation_id: conversationId
+                    })
+                });
+
+                removeTypingIndicator(typingId);
+
+                if (response.ok) {
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder("utf-8");
+                    
+                    const messageId = 'bot-msg-' + Date.now();
+                    const html = `
+                        <div class="flex">
+                            <div class="w-8 h-8 rounded-full bg-[#FFDF00] flex items-center justify-center flex-shrink-0 mr-3">
+                                <span class="text-[#0060A9] font-bold text-xs">AI</span>
+                            </div>
+                            <div class="chat-bubble-bot rounded-2xl px-4 py-3 shadow-sm max-w-[80%] text-sm prose prose-sm max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0" id="${messageId}"></div>
+                        </div>
+                    `;
+                    chatMessages.insertAdjacentHTML('beforeend', html);
+                    const msgElement = document.getElementById(messageId);
+                    
+                    let buffer = "";
+                    let fullBotMessage = "";
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        
+                        buffer += decoder.decode(value, { stream: true });
+                        const lines = buffer.split('\n');
+                        buffer = lines.pop(); // keep last incomplete line
+                        
+                        for (let i = 0; i < lines.length; i++) {
+                            const line = lines[i].trim();
+                            if (line.startsWith('data:')) {
+                                const dataStr = line.substring(5).trim();
+                                if (!dataStr) continue;
+                                try {
+                                    const payload = JSON.parse(dataStr);
+                                    if (payload.event === 'message' && payload.answer) {
+                                        fullBotMessage += payload.answer;
+                                        msgElement.innerHTML = marked.parse(fullBotMessage);
+                                        chatMessages.scrollTop = chatMessages.scrollHeight;
+                                    } else if (payload.event === 'message_end' && payload.conversation_id) {
+                                        conversationId = payload.conversation_id;
+                                    } else if (payload.conversation_id && !conversationId) {
+                                        conversationId = payload.conversation_id;
+                                    }
+                                } catch(e) {}
+                            }
+                        }
+                    }
+                } else if (response.status === 401) {
+                    alert("Session expired. Please login again.");
+                    logout();
+                } else {
+                    const errPayload = await response.json();
+                    appendBotMessage(`Error: ${errPayload.detail || response.statusText}`);
+                }
+            } catch (err) {
+                removeTypingIndicator(typingId);
+                appendBotMessage(`Network error. Please try again. ${err.message}`);
+                console.error(err);
+            } finally {
+                chatInput.disabled = false;
+                sendBtn.disabled = false;
+                chatInput.focus();
+            }
+        }
+
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, 
+                tag => ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    "'": '&#39;',
+                    '"': '&quot;'
+                }[tag] || tag)
+            );
+        }
+    </script>
+</body>
+</html>
