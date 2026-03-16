@@ -1,0 +1,16 @@
+[Unit]
+Description=Accounts Payable Mock API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/demo_ready_togo/accounts-payable-chatbot
+ExecStart=/root/demo_ready_togo/accounts-payable-chatbot/.venv/bin/python /root/demo_ready_togo/accounts-payable-chatbot/mock_api.py
+Restart=always
+RestartSec=3
+User=root
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target

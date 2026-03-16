@@ -14,6 +14,13 @@ pip install -r requirements.txt
 uvicorn app:app --host 0.0.0.0 --port 8000
 ```
 
+或者直接使用项目内置脚本：
+
+```bash
+./start_backend.sh
+./stop_backend.sh
+```
+
 服务启动后可用地址：
 
 - `GET http://localhost:8000/health`
