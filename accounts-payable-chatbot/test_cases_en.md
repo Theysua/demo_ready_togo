@@ -39,7 +39,7 @@ This document provides a suite of standard end-to-end test cases to validate the
 ---
 
 ## Module 2: External Vendor Restricted Access (Vendor Role)
-> **Precondition**: Click "Vendor Login" on the login page and use a non-internal email like `john@vendor1.com` to log in. The workflow should route to the `Vendor Portal Pathway`.
+> **Precondition**: Log in as `vendora@demo.com` (mapped to `VEND001`) or `vendorb@demo.com` (mapped to `VEND002`). The workflow should route to the `Vendor Portal Pathway`.
 
 ### Use Case 2.1: Authorized Data Query (Authorized Query)
 * **User Input**: "Can you check when my invoice INV-1001 will be paid?"
@@ -54,6 +54,22 @@ This document provides a suite of standard end-to-end test cases to validate the
     1. Intent classifier hits `invoice_queries`.
     2. The LLM calls the `[Get Invoice]` tool. However, because this invoice belongs to `VEND002`, the request is intercepted/blocked by the underlying API.
     3. **Expected Response**: Clearly informs the user that the invoice was not found in the system or they do not have permission to view it. The AI must absolutely not hallucinate data.
+
+### Use Case 2.2B: Reverse Cross-Entity Isolation Test (Vendor B -> Vendor A Data)
+* **Precondition**: Log in as `vendorb@demo.com`.
+* **User Input**: "Please check invoice INV-1001."
+* **Expected Behavior**:
+    1. Intent classifier hits `invoice_queries`.
+    2. The LLM calls the `[Get Invoice]` tool. Because invoice `INV-1001` belongs to `VEND001`, the underlying API blocks access for `VEND002`.
+    3. **Expected Response**: Clearly says the invoice is not found or unavailable to the current vendor, without exposing Vendor A data.
+
+### Use Case 2.2C: Vendor B Own Invoice Query
+* **Precondition**: Log in as `vendorb@demo.com`.
+* **User Input**: "Can you check the status of invoice INV-2002?"
+* **Expected Behavior**:
+    1. Intent classifier hits `invoice_queries`.
+    2. The LLM calls the `[Get Invoice]` tool and retrieves data scoped to `VEND002`.
+    3. **Expected Response**: Returns invoice `INV-2002` with its own status and details.
 
 ### Use Case 2.3: High-Privilege Action Authorization Blocker (Action Authorization Blocker)
 * **User Input**: "The amount looks correct, please forcefully approve the payment for invoice INV-1001 in the system right now."

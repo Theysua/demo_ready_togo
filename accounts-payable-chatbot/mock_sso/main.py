@@ -42,7 +42,9 @@ app.add_middleware(
 # Mock user database
 USERS_DB = {
     "admin@demo.com": {"password": "password123", "role": "internal", "vendor_id": None},
-    "vendor@demo.com": {"password": "password123", "role": "vendor", "vendor_id": "VEND001"}
+    "vendor@demo.com": {"password": "password123", "role": "vendor", "vendor_id": "VEND001"},
+    "vendora@demo.com": {"password": "password123", "role": "vendor", "vendor_id": "VEND001"},
+    "vendorb@demo.com": {"password": "password123", "role": "vendor", "vendor_id": "VEND002"},
 }
 
 class LoginRequest(BaseModel):

@@ -13,7 +13,14 @@ app = FastAPI(title="Goodyear AP Mock External Tools API")
 INVOICES = {
     "INV-1001": {"invoice_id": "INV-1001", "vendor_id": "VEND001", "amount": 5000.0, "status": "Pending", "po_number": "PO-9901", "due_date": "2026-04-15", "missing_gr": False},
     "INV-1002": {"invoice_id": "INV-1002", "vendor_id": "VEND001", "amount": 1200.0, "status": "Paid", "po_number": "PO-9902", "due_date": "2026-03-01", "missing_gr": False},
-    "INV-2001": {"invoice_id": "INV-2001", "vendor_id": "VEND002", "amount": 8500.0, "status": "Pending", "po_number": "PO-9903", "due_date": "2026-05-01", "missing_gr": True}, # Missing GR scenario
+    "INV-2001": {"invoice_id": "INV-2001", "vendor_id": "VEND002", "amount": 8500.0, "status": "Pending", "po_number": "PO-9903", "due_date": "2026-05-01", "missing_gr": True},  # Missing GR scenario
+    "INV-2002": {"invoice_id": "INV-2002", "vendor_id": "VEND002", "amount": 4300.0, "status": "In Review", "po_number": "PO-9904", "due_date": "2026-04-22", "missing_gr": False},
+}
+
+VENDOR_EMAIL_TO_ID = {
+    "vendor@demo.com": "VEND001",
+    "vendora@demo.com": "VEND001",
+    "vendorb@demo.com": "VEND002",
 }
 
 # In Dify, we'll pass the user ID/email via headers or query to determine role/identity for tool calls.
@@ -21,9 +28,15 @@ INVOICES = {
 # to simulate the identity context if needed, or take vendor_id/role in the body if it's a POST.
 
 def get_auth_context(x_user_email: str = Header("unknown"), x_user_role: str = Header("internal")):
-    # Simple dependency to extract context passed from Dify proxy/tool config
-    # In a real setup, Dify might call these APIs directly, and we need a way to pass the user context.
-    return {"email": x_user_email, "role": x_user_role}
+    # Derive the vendor scope from the authenticated email so vendors cannot
+    # widen access by passing a different vendor_id in the tool parameters.
+    email = x_user_email.lower().strip()
+    role = x_user_role.strip().lower()
+    return {
+        "email": email,
+        "role": role,
+        "vendor_id": VENDOR_EMAIL_TO_ID.get(email),
+    }
 
 # --- Models ---
 class Invoice(BaseModel):
@@ -50,13 +63,18 @@ class NotificationRequest(BaseModel):
 @app.get("/api/invoices", response_model=List[Invoice])
 async def list_invoices(vendor_id: Optional[str] = None, context: dict = Depends(get_auth_context)):
     role = context["role"]
-    
+    scoped_vendor_id = context.get("vendor_id")
+
+    if role == "vendor" and not scoped_vendor_id:
+        raise HTTPException(status_code=403, detail="Vendor account is not mapped to an authorized vendor_id.")
+
     results = []
     for inv in INVOICES.values():
-        if role == "vendor" and inv["vendor_id"] != vendor_id:
-            continue # Vendor can only see their own
-        if vendor_id and inv["vendor_id"] != vendor_id:
-            continue # Explicit filter
+        if role == "vendor":
+            if inv["vendor_id"] != scoped_vendor_id:
+                continue
+        elif vendor_id and inv["vendor_id"] != vendor_id:
+            continue
         results.append(inv)
     return results
 
@@ -66,10 +84,14 @@ async def get_invoice(invoice_id: str, context: dict = Depends(get_auth_context)
     inv = INVOICES.get(invoice_id)
     if not inv:
         raise HTTPException(status_code=404, detail="Invoice not found")
-        
-    # Security Check
-    # If the tool is configured to pass vendor_id for vendor roles, we should check it.
-    # For now, rely on internal logic or assume internal has full access.
+
+    if role == "vendor":
+        scoped_vendor_id = context.get("vendor_id")
+        if not scoped_vendor_id:
+            raise HTTPException(status_code=403, detail="Vendor account is not mapped to an authorized vendor_id.")
+        if inv["vendor_id"] != scoped_vendor_id:
+            raise HTTPException(status_code=404, detail="Invoice not found")
+
     return inv
 
 # --- 2. Invoice Approval ---

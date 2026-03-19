@@ -32,6 +32,17 @@
             0%, 80%, 100% { transform: scale(0); }
             40% { transform: scale(1); }
         }
+        .thinking-spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #d1d5db;
+            border-top-color: #0060A9;
+            border-radius: 9999px;
+            animation: spin 0.9s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body class="bg-gray-100 h-screen flex flex-col">
@@ -55,37 +66,66 @@
 
     <!-- Main Content (Chat Area) -->
     <main class="flex-1 overflow-hidden flex justify-center p-6">
-        <div class="bg-white rounded-lg shadow-md w-full max-w-4xl flex flex-col overflow-hidden">
-            
-            <!-- Chat Header -->
-            <div class="bg-gray-50 border-b border-gray-200 px-6 py-4">
-                <h2 class="font-semibold text-gray-800">AP Assistant</h2>
-                <p class="text-xs text-gray-500">Ask me about invoices, approvals, or AP workflow</p>
-            </div>
+        <div class="w-full max-w-7xl flex gap-6 items-stretch">
+            <div class="bg-white rounded-lg shadow-md flex-1 max-w-4xl flex flex-col overflow-hidden">
+                
+                <!-- Chat Header -->
+                <div class="bg-gray-50 border-b border-gray-200 px-6 py-4">
+                    <h2 class="font-semibold text-gray-800">AP Assistant</h2>
+                    <p class="text-xs text-gray-500">Ask me about invoices, approvals, or AP workflow</p>
+                </div>
 
-            <!-- Messages Container -->
-            <div id="chat-messages" class="flex-1 overflow-y-auto p-6 space-y-6">
-                <!-- Initial Greeting -->
-                <div class="flex">
-                    <div class="w-8 h-8 rounded-full bg-[#FFDF00] flex items-center justify-center flex-shrink-0 mr-3">
-                        <span class="text-[#0060A9] font-bold text-xs">AI</span>
+                <!-- Messages Container -->
+                <div id="chat-messages" class="flex-1 overflow-y-auto p-6 space-y-6">
+                    <!-- Initial Greeting -->
+                    <div class="flex">
+                        <div class="w-8 h-8 rounded-full bg-[#FFDF00] flex items-center justify-center flex-shrink-0 mr-3">
+                            <span class="text-[#0060A9] font-bold text-xs">AI</span>
+                        </div>
+                        <div class="chat-bubble-bot rounded-2xl px-4 py-3 shadow-sm max-w-[80%] text-sm prose prose-sm max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+                            <p>Hello! I am the Accounts Payable Chatbot. How can I help you today?</p>
+                        </div>
                     </div>
-                    <div class="chat-bubble-bot rounded-2xl px-4 py-3 shadow-sm max-w-[80%] text-sm prose prose-sm max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
-                        <p>Hello! I am the Accounts Payable Chatbot. How can I help you today?</p>
-                    </div>
+                </div>
+
+                <!-- Input Area -->
+                <div class="border-t border-gray-200 px-6 py-4 bg-gray-50">
+                    <form id="chat-form" onsubmit="sendMessage(event)" class="relative">
+                        <input type="text" id="chat-input" class="w-full bg-white border border-gray-300 rounded-full pl-6 pr-14 py-3 focus:outline-none focus:ring-2 focus:ring-[#0060A9] focus:border-transparent" placeholder="Type your message here...">
+                        <button type="submit" id="send-btn" class="absolute right-2 top-1.5 bottom-1.5 bg-[#0060A9] hover:bg-blue-700 text-white rounded-full w-10 h-10 flex items-center justify-center transition-colors">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                        </button>
+                    </form>
                 </div>
             </div>
 
-            <!-- Input Area -->
-            <div class="border-t border-gray-200 px-6 py-4 bg-gray-50">
-                <form id="chat-form" onsubmit="sendMessage(event)" class="relative">
-                    <input type="text" id="chat-input" class="w-full bg-white border border-gray-300 rounded-full pl-6 pr-14 py-3 focus:outline-none focus:ring-2 focus:ring-[#0060A9] focus:border-transparent" placeholder="Type your message here...">
-                    <button type="submit" id="send-btn" class="absolute right-2 top-1.5 bottom-1.5 bg-[#0060A9] hover:bg-blue-700 text-white rounded-full w-10 h-10 flex items-center justify-center transition-colors">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-                    </button>
-                </form>
-            </div>
-            
+            <aside id="demo-sidebar" class="hidden w-80 flex-shrink-0">
+                <div class="bg-white rounded-lg shadow-md border border-amber-200 overflow-hidden">
+                    <div class="px-5 py-4 bg-amber-50 border-b border-amber-200">
+                        <h3 class="text-sm font-semibold text-amber-900">Demo Reminder</h3>
+                        <p class="text-xs text-amber-800 mt-1">For the audience of this demo</p>
+                    </div>
+                    <div class="p-5 text-sm text-gray-700 space-y-4">
+                        <div>
+                            <div class="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Purpose</div>
+                            <p>This panel helps explain vendor data isolation during the live demo.</p>
+                        </div>
+                        <div>
+                            <div class="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Vendor A Access</div>
+                            <p><span class="font-medium">Accounts:</span> `vendor@demo.com`, `vendora@demo.com`</p>
+                            <p><span class="font-medium">Invoices:</span> `INV-1001`, `INV-1002`</p>
+                        </div>
+                        <div>
+                            <div class="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Vendor B Access</div>
+                            <p><span class="font-medium">Account:</span> `vendorb@demo.com`</p>
+                            <p><span class="font-medium">Invoices:</span> `INV-2001`, `INV-2002`</p>
+                        </div>
+                        <div class="rounded-md bg-gray-50 border border-gray-200 px-3 py-3 text-xs text-gray-600">
+                            Vendors should be able to view only their own invoices and should not be able to retrieve the other vendor's data.
+                        </div>
+                    </div>
+                </div>
+            </aside>
         </div>
     </main>
 
@@ -108,6 +148,7 @@
         } else {
             roleBadge.innerText = `Vendor (${userInfo.vendor_id})`;
             roleBadge.className = "inline-block px-2 py-0.5 rounded text-xs font-semibold uppercase mt-0.5 bg-purple-100 text-purple-800";
+            document.getElementById('demo-sidebar').classList.remove('hidden');
         }
 
         function logout() {
@@ -169,8 +210,14 @@
                         <span class="text-[#0060A9] font-bold text-xs">AI</span>
                     </div>
                     <div class="chat-bubble-bot rounded-2xl px-4 py-3 shadow-sm flex items-center">
-                        <div class="typing-indicator flex items-center h-5">
-                            <span></span><span></span><span></span>
+                        <div class="flex items-center gap-3 text-sm text-gray-500">
+                            <div class="thinking-spinner flex-shrink-0"></div>
+                            <div class="flex items-center gap-2">
+                                <span class="font-medium">Thinking...</span>
+                                <div class="typing-indicator flex items-center h-5">
+                                    <span></span><span></span><span></span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -212,8 +259,6 @@
                     })
                 });
 
-                removeTypingIndicator(typingId);
-
                 if (response.ok) {
                     const reader = response.body.getReader();
                     const decoder = new TextDecoder("utf-8");
@@ -229,9 +274,11 @@
                     `;
                     chatMessages.insertAdjacentHTML('beforeend', html);
                     const msgElement = document.getElementById(messageId);
+                    msgElement.parentElement.style.display = 'none';
                     
                     let buffer = "";
                     let fullBotMessage = "";
+                    let hasShownResponse = false;
                     while (true) {
                         const { done, value } = await reader.read();
                         if (done) break;
@@ -248,6 +295,11 @@
                                 try {
                                     const payload = JSON.parse(dataStr);
                                     if (payload.event === 'message' && payload.answer) {
+                                        if (!hasShownResponse) {
+                                            removeTypingIndicator(typingId);
+                                            msgElement.parentElement.style.display = '';
+                                            hasShownResponse = true;
+                                        }
                                         fullBotMessage += payload.answer;
                                         msgElement.innerHTML = marked.parse(fullBotMessage);
                                         chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -260,10 +312,18 @@
                             }
                         }
                     }
+
+                    if (!hasShownResponse) {
+                        removeTypingIndicator(typingId);
+                        msgElement.parentElement.style.display = '';
+                        msgElement.innerHTML = marked.parse(fullBotMessage || 'No response received.');
+                    }
                 } else if (response.status === 401) {
+                    removeTypingIndicator(typingId);
                     alert("Session expired. Please login again.");
                     logout();
                 } else {
+                    removeTypingIndicator(typingId);
                     const errPayload = await response.json();
                     appendBotMessage(`Error: ${errPayload.detail || response.statusText}`);
                 }

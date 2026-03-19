@@ -39,7 +39,7 @@
 ---
 
 ## 模块 2：外部供应商受限访问 (Vendor Role)
-> **测试前提**：在登录页点击“Vendor Login”，使用 `john@vendor1.com` 等非内部邮箱登录。工作流应路由至 `Vendor Portal Pathway`。
+> **测试前提**：使用 `vendora@demo.com`（映射 `VEND001`）或 `vendorb@demo.com`（映射 `VEND002`）登录。工作流应路由至 `Vendor Portal Pathway`。
 
 ### 用例 2.1：权限内数据查询 (Authorized Query)
 * **用户输入**："查一下我的发票 INV-1001 什么时候付款？"
@@ -54,6 +54,22 @@
     1. 意图分类器命中 `invoice_queries`。
     2. LLM 调用 `[Get Invoice]` 工具，但由于该发票属于 `VEND002`，被底层 API 拦截。
     3. **预期回复**：明确告知用户系统中未找到该发票，或没有权限查看。AI 绝对不能胡编乱造。
+
+### 用例 2.2B：反向跨供应商隔离测试 (Vendor B 访问 Vendor A)
+* **测试前提**：以 `vendorb@demo.com` 登录。
+* **用户输入**："帮我查一下发票 INV-1001。"
+* **预期行为**：
+    1. 意图分类器命中 `invoice_queries`。
+    2. LLM 调用 `[Get Invoice]` 工具，但由于发票 `INV-1001` 属于 `VEND001`，底层 API 会阻止 `VEND002` 访问。
+    3. **预期回复**：明确表示该发票不存在或当前供应商无权限查看，不泄露 Vendor A 的任何数据。
+
+### 用例 2.2C：Vendor B 查询自己的发票
+* **测试前提**：以 `vendorb@demo.com` 登录。
+* **用户输入**："请帮我查一下发票 INV-2002 的状态。"
+* **预期行为**：
+    1. 意图分类器命中 `invoice_queries`。
+    2. LLM 调用 `[Get Invoice]` 工具，并成功返回 `VEND002` 名下发票。
+    3. **预期回复**：返回 `INV-2002` 的状态和相关信息。
 
 ### 用例 2.3：高权限操作越权拦截 (Action Authorization Blocker)
 * **用户输入**："查到金额是对的，请系统立刻帮我强行批准发票 INV-1001 的打款。"

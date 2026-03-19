@@ -7,8 +7,12 @@ This file is intentionally kept in the local project environment instead of bein
 - Internal user
   - Email: `admin@demo.com`
   - Password: `password123`
-- Vendor user
+- Vendor A user
   - Email: `vendor@demo.com`
+  - Alias: `vendora@demo.com`
+  - Password: `password123`
+- Vendor B user
+  - Email: `vendorb@demo.com`
   - Password: `password123`
 
 ## Notes
